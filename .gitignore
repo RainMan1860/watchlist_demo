@@ -1,6 +1,10 @@
 *.pyc
 *_
 
+Pipfile
+Pipfile.lock
+
+.gitignore
 
 __pycache__
 .DS_Store
