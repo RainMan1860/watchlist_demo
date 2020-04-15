@@ -3,12 +3,17 @@
 <head>
     <meta charset="utf-8">
     <title>{{ name }}'s Watch list</title>
+    <link rel="icon" href="{{url_for('static',filename='favicon.ico')}}">
+    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" type='text/css'>
 </head>
 
 <body>
-    <h2> {{name}}'s Watch list</h2>
+    <h2>
+         <img alt ="Avatar" class='avatar' src="{{ url_for('static',filename='images/avatar.png')}}" >
+        {{name}}'s Watch list
+    </h2>
     <p> {{movies|length}} Titles </p>
-    <ul>
+    <ul class='movie-list'>
         {# 通过迭代输出 以下序列#}
         {% for movie in movies %}
         <li>
@@ -16,6 +21,7 @@
         </li>
         {% endfor %}
     </ul>
+    <img alt="Avatar" class='totoro' src="{{url_for('static',filename ='images/totoro.gif')}}">
     <footer>
         <small>
             &copy;2020
