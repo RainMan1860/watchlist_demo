@@ -82,3 +82,28 @@ def process():
 
 #----------------------------------------------------
 
+# 定义 forge 命令 把所有虚拟数据添加到数据库里面
+import click
+@app.cli.command()
+def forge():
+	#b.create_all()  #把生成的数据加入数据库中
+	myname = 'xy'
+	movies_list = [
+	{"title":"My Neighbor Totoro","year":"1988"},
+	{"title":"Dead Poets Society","year":"1989"},
+	{"title":"A Perfect World","year":"1993"},
+	{"title":"Leon","year":"1994"},
+	{"title":"Mahjong","year":"1996"},
+	{"title":"Swallowtail Butterfly","year":"1996"},
+	{"title":"King of comedy","year":"1999"},
+	{"title":"Devils on the Doorstep","year":"1999"},
+	{"title":"Wall-E","year":"2008"},
+	{"title":"The pork of Music","year":"2012"},]
+	user = User(name=myname)
+	db.session.add(user)
+	for m  in movies_list:
+		movie_object = Movie(title=m['title'],year = m['year'])
+		db.session.add(movie_object)
+	db.session.commit()
+	click.echo('done!')
+
