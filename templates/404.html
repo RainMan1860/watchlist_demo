@@ -1,18 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>{{ name }}'s Watch list</title>
-    <link rel="icon" href="{{url_for('static',filename='favicon.ico')}}">
-    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" type='text/css'>
-</head>
+{% extends   'base.html' %}
 
-<body>
-    <h2>
-         <img alt ="Avatar" class='avatar' src="{{ url_for('static',filename='images/avatar.png')}}" >
-        {{name}}'s Watch list
-    </h2>
-     <ul class='movie-list'>
+{% block content %}
+<ul class='movie-list'>
     <li >
         Page Not Found- 404
         <span class="float-right">
@@ -21,15 +10,5 @@
                 给函数index 函数绑定的url 根 / -->
         </span>
     </li>
-    </ul>
-    <img alt="Avatar" class='totoro' src="{{url_for('static',filename ='images/totoro.gif')}}">
-    <footer>
-        <small>
-            &copy;2020
-            <a href="http://helloflask.com/tutorial">  Hello flask </a>
-        </small>
-    </footer>
-
-</body>
-
-</html>
+</ul>
+{% endblock %}

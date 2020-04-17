@@ -141,5 +141,5 @@ def page_not_fond(e): #要传入的错误代码
 @app.route ("/")
 def index():
 	#return render_template("index.html",name=name,movies = movies)
-	movie = Movie.query.all()
-	return render_template("index.html",movies = movies)
+	movies = Movie.query.all()
+	return render_template('index.html',movies = movies)
