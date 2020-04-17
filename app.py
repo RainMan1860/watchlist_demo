@@ -107,3 +107,15 @@ def forge():
 	db.session.commit()
 	click.echo('done!')
 
+# 自定义错误页面
+#如果访问一个不存在的url，flask 会自动返回一个404
+#错误相应，默认的错误页面非常简陋
+#建立一个404.html 错误模板页面
+#装饰器注册一个错误处理函数，当404错误发生时
+#page_not_fond()函数被触发，返回值作为响应主体（渲染好的模板）返回给客户端
+
+@app.errorhandler(404)
+def page_not_fond(e): #要传入的错误代码
+	user = User.query.first()
+	return render_template('404.html',user=user),404 # 返回渲染好的模板和404状态码
+
