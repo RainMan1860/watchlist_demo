@@ -35,9 +35,9 @@ movies = [
 
 from flask import render_template
 
-@app.route ("/")
-def index():
-	return render_template("index.html",name=name,movies = movies)
+## @app.route ("/")
+## def index():
+##	return render_template("index.html",name=name,movies = movies)
 
 # 使用SQLAlchemy 操作数据库
 from flask_sqlalchemy import SQLAlchemy
@@ -107,15 +107,39 @@ def forge():
 	db.session.commit()
 	click.echo('done!')
 
-# 自定义错误页面
+# ----------------第一次-自定义错误页面------------------
 #如果访问一个不存在的url，flask 会自动返回一个404
 #错误相应，默认的错误页面非常简陋
 #建立一个404.html 错误模板页面
 #装饰器注册一个错误处理函数，当404错误发生时
 #page_not_fond()函数被触发，返回值作为响应主体（渲染好的模板）返回给客户端
 
+#-
+
 @app.errorhandler(404)
 def page_not_fond(e): #要传入的错误代码
 	user = User.query.first()
 	return render_template('404.html',user=user),404 # 返回渲染好的模板和404状态码
 
+#------------  第二次-自定义错误处理页面，增加模板上下文处理哈函数----
+
+#使用app.context_procesor 装饰器注册一个模板上下文函数
+# 函数返回变量dict(user=user)将统一注入到每一个模板的上下文中，因此可以直接在模板中使用user变量
+@app.context_processor #模板上下文函数
+def inject_user():
+	user = User.query.first()
+	return dict(user=user)
+
+# 因为使用了上下文，为每个模板导入了user变量，下面修改路由中的user =user
+@app.errorhandler(404) #装饰器 errhander
+def page_not_fond(e): #要传入的错误代码
+	#user = User.query.first()
+	#return render_template('404.html',user=user),404 # 返回渲染好的模板和404状态码
+	return render_template('404.html'),404 # 返回渲染好的模板和404状态码
+
+#修改路由
+@app.route ("/")
+def index():
+	#return render_template("index.html",name=name,movies = movies)
+	movie = Movie.query.all()
+	return render_template("index.html",movies = movies)
