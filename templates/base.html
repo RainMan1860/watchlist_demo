@@ -1,5 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
+{% for message in get_flashed_messages() %}
+    <div class='alert' >{{message}}</div>
+{% endfor %}
+
 <head>
     {% block head %}
         <meta charset="utf-8">
@@ -24,7 +29,7 @@
         </ul>
     </nav>>
 
-    {% block content%}  {%endblock%} 
+    {% block content%}  {%endblock%}
     <!--content 块 -->
     <!-- 每个页面包括nav 导航 和子模块可以定义的  content 块 -->
 
