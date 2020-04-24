@@ -50,10 +50,39 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False #关闭对模型修改的�
 db = SQLAlchemy(app) # 初始化扩展，传入程序实例app
 
 # ---创建数据库模型，保存用户信息和电影条目信息----
+from werkzeug.security import generate_password_hash,check_password_hash
 # ORM 借助python类操作数据库的表
-class User(db.Model):
-	id 	= db.Column(db.Integer,primary_key = True)
-	name = db.Column(db.String(20)) # 人名
+#from flask_login import UserMixin
+# 继承Flask-Login 提供的Usermaixin类,让User类拥有用于判断认证状态的属性和方法
+#常用的有is_authenticated属性，
+#class User(db.Model,UserMixin):
+#	id 	= db.Column(db.Integer,primary_key = True)
+#	name = db.Column(db.String(20)) # 权限
+#	username =db.Column(db.String(20)) #用户名
+#	password_hash =db.Column(db.String(128))#散列值
+
+#	def set_password(self,password):
+#		self.password_hash = generate_password_hash(password) #用来获得用户输入的密码，接受密码作为参数
+
+#	def validate_password(self,password):
+# 		self.check_password_hash(self.password_hash,password)
+
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20))
+    username = db.Column(db.String(20))
+    password_hash = db.Column(db.String(128))
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def validate_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
 
 class Movie(db.Model):
 	id = db.Column(db.Integer,primary_key = True)
@@ -149,11 +178,15 @@ from  flask import request
 from flask import flash
 from flask import redirect
 app.config['SECRET_KEY'] = 'dev'
+from flask_login import login_required ,current_user# 过滤
+
 @app.route('/',methods=['GET','POST'])
 def index():
 	if	request.method == 'POST':
+		if not current_user.is_authenticated: #过滤未授权用户
+			return redirect(url_for('index'))
 		title = request.form.get('title')
-		year =	request.form.get('year')
+		year =	request.f2orm.get('year')
 		if not title or not year or len(year)>4 or len(title)>60:
 			flash('Invalid input.')
 			return redirect(url_for('index'))
@@ -168,6 +201,7 @@ def index():
 
 
 @app.route('/movie/edit/<int:movie_id>',methods=['GET','POST'])
+@login_required
 def edit(movie_id):
 	movie = Movie.query.get_or_404(movie_id)
 	if  request.method == 'POST':
@@ -185,9 +219,150 @@ def edit(movie_id):
 	return render_template('edit.html',movie = movie)
 
 @app.route('/movie/delete/<int:movie_id>',methods =['POST'])
+@login_required
 def delete(movie_id):
 	movie = Movie.query.get_or_404(movie_id)
 	db.session.delete(movie)
 	db.session.commit()
 	flash('Item deleted')
 	return redirect(url_for('index'))
+
+
+# 创建管理员账户
+import click
+@app.cli.command()
+@click.option('--username',prompt=True ,help = 'The username used to login')
+@click.option('--password',prompt=True ,hide_input=True, confirmation_prompt=True, help='The password to login')
+def admin(username,password):
+	''' create admin user'''
+	db.create_all()
+	user = User.query.first()
+	if user is not None:
+		click.echo('updating uer ') #默认只有一个管理员用户，只需用户名和密码
+		user.username = username
+		user.set_password(password)
+	else:
+		click.echo('Creating user...')#如果没有用户，则创建管理员账户
+		user = User(username = username,name='Admin')
+		user.set_password(password)
+		db.session.add(user)
+	db.session.commit()
+	click.echo('Done')
+
+# 使用flask-login 第3方库，实现用户认证
+
+from flask_login import LoginManager
+
+login_manager = LoginManager(app)
+@login_manager.user_loader
+def load_user(user_id):
+	user = User.query.get(int(user_id))
+	return user
+
+#登录用户 使用Flask-Login 提供的login_user()函数实现，
+# 需要传入用户模型类对象作为参数。
+#from flask_login import login_user
+#@app.route('/login',methods =['GET','POST'])
+#def login():
+#	if request.method == 'POST':
+#		username = request.form['username']
+#		password = request.form['password']
+#
+#		if not username or not password:
+#			flash('Invalid input')
+#			return redirect(url_for('login'))
+#
+#		user = User.query.first()
+#		if username == user.username and user.validate_password(password):
+#			login_user(user)
+#			return redirect(url_for('index'))
+#		flash("Invalid username or password")
+#
+#		return render_template('login.html')
+
+from flask_login import login_user
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if not username or not password:
+            flash('Invalid input.')
+            return redirect(url_for('login'))
+
+        user = User.query.first()
+
+        if username == user.username and user.validate_password(password):
+            login_user(user)
+            flash('Login success.')
+            return redirect(url_for('index'))
+
+        flash('Invalid username or password.')
+        return redirect(url_for('login'))
+
+    return render_template('login.html')
+
+# 登出
+from flask_login import  login_required,logout_user
+@app.route('/logout')
+@login_required #用于视图保护
+def logout():
+	logout_user()
+	flash('Goodbye')
+	return redirect(url_for('index'))
+
+
+# 认证保护
+# 1 视图保护 2 内容 保护
+
+# 视图保护
+# 未登录用户不能执行下面的操作
+# 访问编辑界面，# 访问设置页面 # 执行注销操作#执行删除操作 # 执行添加新条目操作
+# 对于不允许未登录用户 访问的视图，只需要为视图函数添加一个
+#
+
+#添加了@login_required 装饰器后，未登录的用户访问未授权的url，
+#Flask-login会把用户重新定向到登录页面，并显示一个错误提示。为了
+#让这个重定向操作正确执行，我们还需要把以下login_manager.login_view的值
+#设置为程序登录视图的端点（函数名）
+login_manager.login_view = 'login'
+
+
+## 设置页面，支持修改用户的名字
+## 包括/settings 路由，setting()路由函数，setting.html页面模板
+
+from flask_login import login_required,current_user
+
+@app.route('/settings',methods=['GET','POST'])
+@login_required
+def settings():
+	if request.method =="POST":
+		name = request.form['name']
+
+		if not name or len(name)>20:
+			flash('Invalid input')
+			return redirect(url_for('settings'))
+		current_user.name = name
+		db.session.commit()
+		flash('Settings updated.')
+		return redirect(url_for('index'))
+	return render_template('settings.html')
+
+
+#模板内容保护
+#不能对未登录用户显示下列内容
+#创建新条目表单
+#编辑按钮
+#删除按钮
+
+
+
+
+
+
+
+
+
+
+
